@@ -32,12 +32,10 @@ public class SleeplessNightsAnalysis
         }
 
         LocalDate firstNight =
-                getFirstPotentialNight(sessions.get(0));
+                getFirstPotentialNight(sessions);
 
         LocalDate lastNight =
-                getLastPotentialNight(
-                        sessions.get(sessions.size() - 1)
-                );
+                getLastPotentialNight(sessions);
 
         if (firstNight.isAfter(lastNight)) {
             return new SleepAnalysisResult(
@@ -68,79 +66,51 @@ public class SleeplessNightsAnalysis
     }
 
     private LocalDate getFirstPotentialNight(
-            SleepingSession firstSession) {
+            List<SleepingSession> sessions) {
 
-        LocalDate date =
-                firstSession
-                        .getSleepStart()
-                        .toLocalDate();
+        return sessions.stream()
+                .map(session -> {
+                    LocalDate date =
+                            session.getSleepStart().toLocalDate();
 
-        LocalTime time =
-                firstSession
-                        .getSleepStart()
-                        .toLocalTime();
+                    LocalTime time =
+                            session.getSleepStart().toLocalTime();
 
-        /*
-         * Если первая сессия начинается после полудня,
-         * следующая ночь ещё не началась в логе.
-         *
-         * Например:
-         * 01.10 14:00 -> 15:00
-         * первая потенциальная ночь — 02.10.
-         */
-        if (time.isAfter(LocalTime.NOON)) {
-            return date.plusDays(1);
-        }
+                    if (time.isAfter(LocalTime.NOON)) {
+                        return date.plusDays(1);
+                    }
 
-        return date;
+                    return date;
+                })
+                .min(LocalDate::compareTo)
+                .orElseThrow();
     }
 
     private LocalDate getLastPotentialNight(
-            SleepingSession lastSession) {
+            List<SleepingSession> sessions) {
 
-        LocalDate date =
-                lastSession
-                        .getWakeUp()
-                        .toLocalDate();
+        return sessions.stream()
+                .map(session -> {
+                    LocalDate date =
+                            session.getWakeUp().toLocalDate();
 
-        LocalTime time =
-                lastSession
-                        .getWakeUp()
-                        .toLocalTime();
+                    LocalTime time =
+                            session.getWakeUp().toLocalTime();
 
-        /*
-         * Если пробуждение произошло до полудня,
-         * эта дата относится к последней ночи.
-         *
-         * Например:
-         * 01.10 23:00 -> 02.10 07:00
-         * последняя потенциальная ночь — 02.10.
-         */
-        if (time.isBefore(LocalTime.NOON)) {
-            return date;
-        }
+                    if (time.isBefore(LocalTime.NOON)) {
+                        return date;
+                    }
 
-        /*
-         * Если человек проснулся после полудня,
-         * ночь этой даты уже не рассматриваем.
-         */
-        return date.minusDays(1);
+                    return date.minusDays(1);
+                })
+                .max(LocalDate::compareTo)
+                .orElseThrow();
     }
 
     private boolean hasSleepDuringNight(
             List<SleepingSession> sessions,
             LocalDate night) {
 
-        /*
-         * Ночь с датой night:
-         *
-         * вечер предыдущего дня: 18:00 -> 00:00
-         * утро текущего дня:      00:00 -> 06:00
-         *
-         * Например, ночь 02.10:
-         *
-         * 01.10 18:00 ---------------- 02.10 06:00
-         */
         LocalDateTime nightStart =
                 LocalDateTime.of(
                         night.minusDays(1),
@@ -175,3 +145,4 @@ public class SleeplessNightsAnalysis
                 .isAfter(intervalStart);
     }
 }
+

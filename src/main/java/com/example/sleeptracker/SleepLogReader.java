@@ -17,10 +17,12 @@ public class SleepLogReader {
             DateTimeFormatter.ofPattern("dd.MM.yy HH:mm");
 
     public List<SleepingSession> read(String filePath) throws IOException {
-        return Files.lines(Path.of(filePath))
-                .filter(line -> !line.isBlank())
-                .map(this::parseLine)
-                .collect(Collectors.toList());
+        try (var lines = Files.lines(Path.of(filePath))) {
+            return lines
+                    .filter(line -> !line.isBlank())
+                    .map(this::parseLine)
+                    .collect(Collectors.toList());
+        }
     }
 
     private SleepingSession parseLine(String line) {
@@ -39,7 +41,9 @@ public class SleepLogReader {
                 LocalDateTime.parse(parts[1], FORMATTER);
 
         SleepQuality quality =
-                SleepQuality.valueOf(parts[2].trim().toUpperCase());
+                SleepQuality.valueOf(
+                        parts[2].trim().toUpperCase()
+                );
 
         return new SleepingSession(
                 sleepStart,
@@ -48,3 +52,4 @@ public class SleepLogReader {
         );
     }
 }
+
